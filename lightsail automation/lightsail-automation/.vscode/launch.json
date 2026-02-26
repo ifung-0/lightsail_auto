@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run LightSail Bot (FREE Version)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/lightsail_bot_free_ai.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Run LightSail Bot (OpenAI Version)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/lightsail_bot.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Setup LightSail Bot",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/setup.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+  "username": "YOUR_USERNAME_HERE",
+  "password": "YOUR_PASSWORD_HERE",
+  "openai_api_key": "YOUR_OPENAI_API_KEY_HERE (optional)",
+  "huggingface_api_key": "YOUR_HUGGINGFACE_API_KEY_HERE (optional)",
+  "headless": false,
+  "page_flip_interval": 120,
+  "auto_answer_questions": true,
+  "preferred_book_title": "",
+  "reading_speed_wpm": 200,
+  "screenshot_on_question": true,
+  "use_ai": true,
+  "log_level": "INFO"
+}
