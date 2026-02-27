@@ -21,7 +21,7 @@ from collections import deque
 # Config
 FLIP_INTERVAL = 40
 HEADLESS = False
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "YOUR API HERE"
 OPENROUTER_MODEL = "qwen/qwen-2.5-coder-32b-instruct:free"
 DASHBOARD_PORT = 8765
 
