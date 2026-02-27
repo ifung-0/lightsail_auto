@@ -1,14 +1,82 @@
 {
-  "username": "YOUR_USERNAME_HERE",
-  "password": "YOUR_PASSWORD_HERE",
-  "openai_api_key": "YOUR_OPENAI_API_KEY_HERE (optional)",
-  "huggingface_api_key": "YOUR_HUGGINGFACE_API_KEY_HERE (optional)",
+  "active_profile": "default",
+  "profiles": {
+    "default": {
+      "name": "default",
+      "username": "",
+      "password": "",
+      "preferred_books": [],
+      "reading_goals": {
+        "daily_minutes": 30,
+        "weekly_books": 3
+      }
+    }
+  },
   "headless": false,
-  "page_flip_interval": 120,
+  "page_flip_interval": 40,
   "auto_answer_questions": true,
-  "preferred_book_title": "",
-  "reading_speed_wpm": 200,
   "screenshot_on_question": true,
-  "use_ai": true,
-  "log_level": "INFO"
+  "screenshot_on_error": true,
+  "reading_speed_wpm": 200,
+  "speed_reading_mode": false,
+  "speed_flip_interval": 15,
+  "ai": {
+    "use_ai": true,
+    "use_openrouter": false,
+    "openrouter_api_key": "",
+    "openrouter_model": "google/gemma-3-27b-it:free",
+    "openrouter_api_base": "https://api.openrouter.ai/v1",
+    "openai_api_key": "",
+    "openai_model": "gpt-3.5-turbo",
+    "huggingface_api_key": "",
+    "include_book_context": true,
+    "max_context_pages": 3
+  },
+  "learning": {
+    "enabled": true,
+    "store_wrong_answers": true,
+    "max_stored_answers": 100,
+    "adjust_pattern_matching": true
+  },
+  "evasion": {
+    "randomize_timing": true,
+    "timing_jitter_percent": 15.0,
+    "human_mouse": true,
+    "random_scroll": true,
+    "reading_pauses": true,
+    "pause_probability": 0.2,
+    "min_pause_seconds": 5,
+    "max_pause_seconds": 30
+  },
+  "notifications": {
+    "enabled": false,
+    "type": "discord",
+    "webhook_url": "",
+    "bot_token": "",
+    "chat_id": "",
+    "notify_on_complete": true,
+    "notify_on_error": true,
+    "notify_on_question": false
+  },
+  "schedule": {
+    "enabled": false,
+    "start_time": "09:00",
+    "end_time": null,
+    "days_of_week": [0, 1, 2, 3, 4],
+    "duration_minutes": 60
+  },
+  "export": {
+    "auto_export": false,
+    "export_format": "csv",
+    "export_directory": "exports"
+  },
+  "dashboard": {
+    "enabled": true,
+    "port": 8765,
+    "host": "127.0.0.1",
+    "auto_open": true
+  },
+  "log_level": "INFO",
+  "log_directory": "logs",
+  "config_directory": "."
 }
