@@ -26,7 +26,7 @@ load_dotenv()
 FLIP_INTERVAL = 40
 HEADLESS = False
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')  # Load from .env file
-OPENROUTER_MODEL = "qwen/qwen-2.5-coder-32b-instruct:free"
+OPENROUTER_MODEL = "meta-llama/llama-3-8b-instruct:free"  # Free model
 DASHBOARD_PORT = 8765
 
 # State
@@ -139,27 +139,77 @@ def run_dashboard():
     server.serve_forever()
 
 # AI Answerer
-async def get_ai_answer(question, options):
+async def get_ai_answer(context, options):
+    """
+    Get AI answer using page context for better accuracy
+    
+    Args:
+        context: Page text content (up to 2000 chars)
+        options: List of answer options
+    
+    Returns:
+        Index of selected option (0-3)
+    """
     if not OPENROUTER_API_KEY:
         return 0
+    
     try:
         opts = "\n".join([f"{i+1}. {o}" for i, o in enumerate(options)])
-        prompt = f"Question: {question}\n\nOptions:\n{opts}\n\nReply with ONLY the NUMBER (1, 2, 3, or 4)."
+        
+        # Improved prompt with context
+        prompt = f"""You are taking a reading comprehension test. Read the text carefully and answer the question.
+
+READING PASSAGE:
+{context[:2000]}
+
+QUESTION: Based on the passage above, select the correct answer.
+
+OPTIONS:
+{opts}
+
+Think step-by-step:
+1. What does the passage say about this topic?
+2. Which option matches what the passage says?
+
+Reply with ONLY the NUMBER (1, 2, 3, or 4) of the correct answer. No explanation."""
+        
         r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-            headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-            json={"model": OPENROUTER_MODEL, "messages": [{"role": "user", "content": prompt}], "max_tokens": 5},
-            timeout=20)
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}", 
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:8765",
+                "X-OpenRouter-Title": "LightSail Bot"
+            },
+            json={
+                "model": OPENROUTER_MODEL, 
+                "messages": [{"role": "user", "content": prompt}], 
+                "max_tokens": 10,
+                "temperature": 0.3  # Lower temperature for more focused answers
+            },
+            timeout=30)
+        
         if r.ok:
             ans = r.json()['choices'][0]['message']['content'].strip()
-            log(f"AI: '{ans}'", "INFO")
+            log(f"AI response: '{ans}'", "INFO")
+            
+            # Parse the number
             for i in range(len(options)):
                 if str(i+1) in ans:
-                    log(f"Selected: {options[i]}", "INFO")
+                    log(f"AI selected option {i+1}: {options[i]}", "INFO")
                     return i
+            
+            # Fallback: check if option text is in response
             for i, o in enumerate(options):
                 if o.lower() in ans.lower():
+                    log(f"Found option text: {o}", "INFO")
                     return i
-        return 0
+            
+            log("No match found, using first option", "WARNING")
+            return 0
+        else:
+            log(f"API error: {r.status_code}", "ERROR")
+            return 0
+            
     except Exception as e:
         log(f"AI error: {e}", "ERROR")
         return 0
@@ -437,6 +487,71 @@ class Bot:
         
         log("No suitable books found", "ERROR")
         return False
+    
+    async def get_page_context(self):
+        """Extract page text content including from iframes (EPUB content)"""
+        try:
+            # Method 1: Try to get text from iframes (EPUB content is usually in iframes)
+            frames = self.page.frames
+            frame_text = ""
+            
+            for frame in frames:
+                try:
+                    frame_content = await frame.evaluate('''() => {
+                        const body = document.body.innerText;
+                        if (body && body.length > 100) {
+                            return body;
+                        }
+                        return '';
+                    }''')
+                    if frame_content and len(frame_content) > len(frame_text):
+                        frame_text = frame_content
+                except:
+                    continue
+            
+            if frame_text and len(frame_text) > 500:
+                log(f"Got text from iframe: {len(frame_text)} chars", "DEBUG")
+                return frame_text[:2000]
+            
+            # Method 2: Try main content selectors
+            main_text = await self.page.evaluate('''() => {
+                const selectors = [
+                    '.reader-content',
+                    '.epub-view', 
+                    '#viewer',
+                    '.epub-container',
+                    '[class*="reader"]',
+                    '[class*="content"]',
+                    '.chapter-content',
+                    'article'
+                ];
+                
+                for (const sel of selectors) {
+                    const el = document.querySelector(sel);
+                    if (el && el.innerText && el.innerText.length > 100) {
+                        return el.innerText;
+                    }
+                }
+                
+                // Fallback to body
+                return document.body.innerText;
+            }''')
+            
+            if main_text and len(main_text) > 100:
+                log(f"Got text from main content: {len(main_text)} chars", "DEBUG")
+                return main_text[:2000]
+            
+            # Method 3: Get all visible text
+            all_text = await self.page.evaluate('''() => {
+                return document.body.innerText;
+            }''')
+            
+            log(f"Got text from body: {len(all_text)} chars", "DEBUG")
+            return all_text[:2000] if all_text else ""
+            
+        except Exception as e:
+            log(f"Context extraction error: {e}", "ERROR")
+            return ""
     
     async def click_read(self):
         """Click the Read Book button to enter the book"""
@@ -719,15 +834,12 @@ class Bot:
                 log(f"Options: {answer_opts}", "INFO")
                 
                 if len(answer_opts) >= 2:
-                    ctx = await self.page.evaluate('''() => {
-                        const svg = document.querySelector('g.cloze-assessment-pending');
-                        if (svg) {
-                            let p = svg.parentElement;
-                            while (p && p.tagName !== 'svg') p = p.parentElement;
-                            return p ? p.parentElement.innerText.substring(0, 500) : '';
-                        }
-                        return '';
-                    }''')
+                    # Get FULL page text for better AI context - try multiple methods
+                    ctx = await self.get_page_context()
+                    
+                    log(f"Context length: {len(ctx)} chars", "INFO")
+                    log(f"Context preview: {ctx[:300]}...", "INFO")
+                    log(f"Options: {answer_opts}", "INFO")
                     
                     sel = await get_ai_answer(ctx, answer_opts)
                     log(f"AI chose: {answer_opts[sel]}", "INFO")
@@ -759,6 +871,8 @@ class Bot:
         try:
             self.q_detected += 1
             update(questions_detected=self.q_detected)
+            
+            # Get question text
             q = await self.page.evaluate('''() => {
                 const r = document.querySelectorAll('input[type="radio"]');
                 if (r.length) {
@@ -767,6 +881,10 @@ class Bot:
                 }
                 return '';
             }''')
+            
+            # Get FULL page text for context
+            page_ctx = await self.get_page_context()
+            
             opts = []
             for radio in radios[:4]:
                 lbl = await radio.evaluate_handle('el => el.closest("label")')
@@ -775,8 +893,13 @@ class Bot:
                     opts.append(t if t else f"Option {len(opts)+1}")
                 else:
                     opts.append(f"Option {len(opts)+1}")
+            
             log(f"Options: {opts}", "INFO")
-            sel = await get_ai_answer(q, opts)
+            log(f"Context length: {len(page_ctx)} chars", "INFO")
+            log(f"Context preview: {page_ctx[:200]}...", "DEBUG")
+            
+            # Pass page context to AI
+            sel = await get_ai_answer(page_ctx, opts)
             if sel < len(radios):
                 await radios[sel].click()
                 log(f"Selected: {opts[sel]}", "INFO")
