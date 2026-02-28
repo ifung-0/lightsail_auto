@@ -280,6 +280,51 @@ MIT License - Free to use and modify
 
 ---
 
+## 📥 First Time Downloading from GitHub?
+
+**If you just downloaded this from GitHub, follow these steps:**
+
+### Quick Setup for New Users
+
+1. **Install Python** (if not already installed)
+   - Go to https://www.python.org/downloads/
+   - Download Python 3.8 or newer
+   - ✅ Check "Add Python to PATH" during installation
+
+2. **Open the downloaded folder**
+   - Navigate to `lightsail automation\lightsail-automation`
+
+3. **Run the launcher**
+   - Double-click `run.bat`
+
+4. **Install dependencies** (First time only - takes 5-10 minutes)
+   - Select option **4. Install Dependencies**
+   - Wait for installation to complete
+
+5. **Run the bot**
+   - Select option **1. Run Enhanced Bot with AI**
+   - Browser opens automatically
+   - Log in with Google
+   - Bot starts reading!
+
+### Common Issues for New Users
+
+| Issue | Solution |
+|-------|----------|
+| "python is not recognized" | Install Python and add to PATH |
+| "No module named 'playwright'" | Select option 4 in run.bat |
+| Dashboard says "Access Denied" | Dashboard only works when bot is running |
+| Bot won't open browser | Run option 4 to install dependencies |
+| Black screen/flash then closes | Run as Administrator or check Python installation |
+
+### Need More Help?
+
+- Read `INSTALLATION_GUIDE.md` for detailed setup instructions
+- Read `QUICKSTART.md` for quick start guide
+- Check logs by selecting option 6 in run.bat
+
+---
+
 ## 🎉 Features Summary
 
 | Feature | Status |

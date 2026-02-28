@@ -13,7 +13,7 @@ echo.
 echo   1. Run Enhanced Bot with AI (Recommended)
 echo   2. Run Bot (No AI - Pattern Matching Only)
 echo   3. Run Setup Wizard
-echo   4. Install Dependencies
+echo   4. Install Dependencies (First Time Only)
 echo   5. Open Dashboard
 echo   6. View Logs
 echo   7. Exit
@@ -41,6 +41,17 @@ echo ============================================================
 echo   Running Enhanced Bot with AI
 echo ============================================================
 echo.
+echo   Checking dependencies...
+python -c "import playwright" 2>nul
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Dependencies not installed!
+    echo   Please select option 4 first to install dependencies.
+    echo.
+    pause
+    goto menu
+)
+echo.
 echo   Starting bot with AI question answering...
 echo   Dashboard: http://localhost:8765
 echo.
@@ -55,6 +66,17 @@ cls
 echo ============================================================
 echo   Running Bot (Pattern Matching Only)
 echo ============================================================
+echo.
+echo   Checking dependencies...
+python -c "import playwright" 2>nul
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Dependencies not installed!
+    echo   Please select option 4 first to install dependencies.
+    echo.
+    pause
+    goto menu
+)
 echo.
 echo   Note: Edit bot_with_dashboard.py and set:
 echo   OPENROUTER_API_KEY = ""
@@ -80,13 +102,33 @@ echo ============================================================
 echo   Installing Dependencies
 echo ============================================================
 echo.
-echo   Installing Python packages...
+echo   This may take a few minutes on first run...
+echo.
+echo   Step 1: Installing Python packages...
 pip install -r requirements.txt
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Failed to install Python packages!
+    echo   Make sure Python is installed correctly.
+    pause
+    goto menu
+)
 echo.
-echo   Installing Playwright browser...
+echo   Step 2: Installing Playwright browser...
 playwright install chromium
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Failed to install Playwright browser!
+    pause
+    goto menu
+)
 echo.
-echo   Installation complete!
+echo ============================================================
+echo   Installation Complete!
+echo ============================================================
+echo.
+echo   You can now run the bot by selecting option 1.
+echo.
 timeout /t 2 >nul
 goto menu
 
@@ -100,6 +142,9 @@ echo   Opening http://localhost:8765 in your browser...
 start http://localhost:8765
 echo.
 echo   Dashboard opened!
+echo.
+echo   Note: The dashboard only works when the bot is running.
+echo.
 timeout /t 2 >nul
 goto menu
 

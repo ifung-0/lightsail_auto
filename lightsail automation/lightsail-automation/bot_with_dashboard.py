@@ -285,30 +285,142 @@ class Bot:
         log("Searching for Power Text books..." if not auto else "Selecting next book...")
         await asyncio.sleep(3)
         await self.page.screenshot(path="book_selection.png")
+
+        # Keywords that indicate an assignment (not a book)
+        assignment_keywords = [
+            'retake', 'clozes', 'assignment', 'quiz', 'test',
+            'start', 'resume', 'submit', 'retry', 'current assignment'
+        ]
         
+        # Section keywords that indicate assignment area
+        assignment_sections = [
+            'current assignment', 'assignments', 'to-do', 'todo'
+        ]
+
+        # Find Power Text books first (most reliable - they have the Power Text icon)
         imgs = await self.page.query_selector_all('img[src*="power-text.svg"]')
         for img in imgs[:3]:
             try:
-                btn = await img.evaluate_handle('el => el.closest("button.btn.w-100.border-0.image-wrapper")')
-                if btn:
-                    title = await btn.evaluate('el => el.innerText')
-                    log(f"Found Power Text: {title[:50]}")
-                    await btn.click()
-                    await asyncio.sleep(3)
-                    await self.click_read()
-                    self.book = title[:50]
-                    update(book=self.book)
-                    return True
+                # Get the parent container
+                container = await img.evaluate_handle('''el => {
+                    // Go up to find the book card or button
+                    let p = el;
+                    for (let i = 0; i < 5; i++) {
+                        if (p.closest && p.closest('.book-card, .library-item, [class*="book" i]')) {
+                            return p.closest('.book-card, .library-item, [class*="book" i]');
+                        }
+                        p = p.parentElement;
+                        if (!p) break;
+                    }
+                    return el.closest('button') || el.parentElement;
+                }''')
+                
+                if container:
+                    # Check if this is in an assignment section
+                    container_text = await container.evaluate('el => el.innerText')
+                    is_in_assignment_section = any(kw in container_text.lower() for kw in assignment_sections)
+                    
+                    if is_in_assignment_section:
+                        log(f"Skipping - in assignment section", "INFO")
+                        continue
+                    
+                    # Get button and verify not an assignment
+                    btn = await container.query_selector('button.btn.w-100.border-0.image-wrapper')
+                    if btn:
+                        btn_text = await btn.evaluate('el => el.innerText')
+                        is_assignment = any(kw in btn_text.lower() for kw in assignment_keywords)
+
+                        if is_assignment:
+                            log(f"Skipping assignment: {btn_text[:50]}", "INFO")
+                            continue
+
+                        title = await btn.evaluate('el => el.innerText')
+                        log(f"Found Power Text: {title[:50]}")
+                        await btn.click()
+                        await asyncio.sleep(3)
+                        await self.click_read()
+                        self.book = title[:50]
+                        update(book=self.book)
+                        return True
+            except Exception as e:
+                log(f"Power Text select error: {e}", "DEBUG")
+                continue
+
+        # Fallback: Look for books in library section (not assignments)
+        # First, try to find the library section specifically
+        library_sections = await self.page.query_selector_all('[class*="library" i], [class*="book" i]:not([class*="assignment" i])')
+        
+        for section in library_sections:
+            try:
+                # Check if this section is an assignment area
+                section_text = await section.evaluate('el => el.innerText')
+                if any(kw in section_text.lower() for kw in assignment_sections):
+                    continue
+                
+                # Find book buttons in this section
+                books = await section.query_selector_all('button.btn.w-100.border-0.image-wrapper')
+                for book_btn in books[:5]:
+                    try:
+                        title = await book_btn.evaluate('el => el.innerText')
+                        
+                        # Skip if this was the last book
+                        if title[:50] == self.book:
+                            continue
+                        
+                        # Skip assignment buttons
+                        is_assignment = any(kw in title.lower() for kw in assignment_keywords)
+                        if is_assignment:
+                            log(f"Skipping assignment: {title[:50]}", "INFO")
+                            continue
+                        
+                        # Skip if too short (likely not a real book title)
+                        if len(title) < 10:
+                            continue
+                        
+                        # Verify has book image (not just text)
+                        has_book_img = await book_btn.evaluate('''el => {
+                            return el.querySelector('img[src*=".jpg"], img[src*=".png"], img[alt*="book" i]') !== null;
+                        }''')
+                        
+                        if not has_book_img:
+                            continue
+                        
+                        await book_btn.click()
+                        await asyncio.sleep(3)
+                        await self.click_read()
+                        self.book = title[:50]
+                        update(book=self.book)
+                        log(f"Selected: {self.book}")
+                        return True
+                    except:
+                        continue
             except:
                 continue
         
+        # Last resort: any book button that's clearly not an assignment
         books = await self.page.query_selector_all('button.btn.w-100.border-0.image-wrapper')
         if books:
-            for book_btn in books[:10]:
+            for book_btn in books[:20]:  # Check more buttons
                 try:
                     title = await book_btn.evaluate('el => el.innerText')
-                    if title[:50] == self.book:
+                    
+                    # Multiple checks to ensure it's a book
+                    is_assignment = any(kw in title.lower() for kw in assignment_keywords)
+                    if is_assignment:
+                        log(f"Skipping assignment: {title[:50]}", "INFO")
                         continue
+                    
+                    if len(title) < 15:  # Real book titles are usually longer
+                        continue
+                    
+                    # Check parent context
+                    parent = await book_btn.evaluate_handle('el => el.parentElement')
+                    if parent:
+                        parent_text = await parent.evaluate('el => el.innerText')
+                        if any(kw in parent_text.lower() for kw in assignment_sections):
+                            log(f"Skipping - parent is assignment section", "INFO")
+                            continue
+                    
                     await book_btn.click()
                     await asyncio.sleep(3)
                     await self.click_read()
@@ -318,26 +430,126 @@ class Bot:
                     return True
                 except:
                     continue
-            
-            await books[0].click()
-            await asyncio.sleep(3)
-            await self.click_read()
-            self.book = "Selected Book"
-            update(book=self.book)
-            return True
+        
+        log("No suitable books found", "ERROR")
         return False
     
     async def click_read(self):
+        """Click the Read Book button to enter the book"""
         try:
+            log("Attempting to click Read Book button...", "INFO")
+            
+            # Already on reader page
             if 'reader' in self.page.url.lower():
+                log("Already on reader page", "INFO")
                 return True
-            btns = await self.page.query_selector_all('button:has-text("Read")')
-            if btns:
-                await btns[0].click()
-                await asyncio.sleep(3)
+            
+            # Take screenshot to see what's on page
+            await self.page.screenshot(path="read_button_check.png")
+            log("Screenshot saved: read_button_check.png", "INFO")
+            
+            log(f"Page URL: {self.page.url}", "INFO")
+            
+            # Method 1: Find button by class (btn btn-primary) and check text
+            log("Looking for Read Book button by class...", "INFO")
+            btns = await self.page.query_selector_all('button.btn.btn-primary')
+            log(f"Found {len(btns)} btn-primary button(s)", "INFO")
+            
+            for i, btn in enumerate(btns):
+                # Get full text content
+                text = await btn.evaluate('el => el.innerText')
+                log(f"Button {i} text: '{text}'", "INFO")
+                
+                # Check if this is the Read Book button
+                if 'Read Book' in text or 'Read' in text:
+                    log(f"Found Read Book button! Text: '{text}'", "INFO")
+                    
+                    try:
+                        # Try clicking with bounding box (more reliable)
+                        box = await btn.bounding_box()
+                        if box:
+                            log(f"Button position: x={box['x']}, y={box['y']}, w={box['width']}, h={box['height']}", "INFO")
+                            await self.page.mouse.click(box['x'] + box['width']/2, box['y'] + box['height']/2)
+                            log("Clicked with mouse!", "INFO")
+                            await asyncio.sleep(3)
+                            
+                            # Check if we're now on reader page
+                            if 'reader' in self.page.url.lower():
+                                log("Successfully entered reader!", "INFO")
+                                return True
+                            else:
+                                log(f"Click worked but URL is: {self.page.url}", "WARNING")
+                    except Exception as e:
+                        log(f"Mouse click failed: {e}", "ERROR")
+                    
+                    # Fallback: try regular click
+                    try:
+                        await btn.click()
+                        log("Regular click worked!", "INFO")
+                        await asyncio.sleep(3)
+                        return True
+                    except Exception as e:
+                        log(f"Regular click also failed: {e}", "ERROR")
+            
+            # Method 2: Try XPath for buttons containing "Read"
+            log("Trying XPath selector...", "DEBUG")
+            try:
+                from playwright.async_api import async_playwright
+                btns = await self.page.query_selector_all('xpath=//button[contains(text(), "Read")]')
+                log(f"XPath found {len(btns)} button(s)", "INFO")
+                
+                if btns:
+                    box = await btns[0].bounding_box()
+                    if box:
+                        await self.page.mouse.click(box['x'] + box['width']/2, box['y'] + box['height']/2)
+                        await asyncio.sleep(3)
+                        log("XPath click successful!", "INFO")
+                        return True
+            except Exception as e:
+                log(f"XPath failed: {e}", "DEBUG")
+            
+            # Method 3: Try clicking any button with "Read" in class or text
+            log("Trying alternative selectors...", "DEBUG")
+            alt_selectors = [
+                'button[class*="primary"]',
+                '.btn-primary',
+                'button:has-text("Read")',
+            ]
+            
+            for selector in alt_selectors:
+                try:
+                    btns = await self.page.query_selector_all(selector)
+                    if btns:
+                        log(f"Found {len(btns)} with selector: {selector}", "INFO")
+                        for btn in btns:
+                            text = await btn.evaluate('el => el.innerText')
+                            if 'Read' in text:
+                                box = await btn.bounding_box()
+                                if box:
+                                    await self.page.mouse.click(box['x'] + box['width']/2, box['y'] + box['height']/2)
+                                    await asyncio.sleep(3)
+                                    log(f"Alternative click worked!", "INFO")
+                                    return True
+                except:
+                    continue
+            
+            # Method 4: Keyboard fallback
+            log("Trying Enter key as last resort...", "INFO")
+            await self.page.keyboard.press('Tab')  # Focus first element
+            await asyncio.sleep(0.5)
+            await self.page.keyboard.press('Enter')
+            await asyncio.sleep(3)
+            
+            if 'reader' in self.page.url.lower():
+                log("Keyboard worked!", "INFO")
                 return True
+            
+            log("Could not click Read Book button", "ERROR")
+            log(f"Final URL: {self.page.url}", "ERROR")
             return False
-        except:
+            
+        except Exception as e:
+            log(f"Click read error: {e}", "ERROR")
             return False
     
     async def check_book_completed(self) -> bool:
