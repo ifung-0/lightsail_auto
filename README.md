@@ -287,13 +287,154 @@ MIT License - Free to use and modify
 
 ---
 
-## 🆘 Support
+## 🆘 Support & Troubleshooting
 
+### Quick Checks
 1. Check dashboard logs at http://localhost:8765
 2. Review log files in `logs/` directory
 3. Check question screenshots
 4. Verify API key is valid
 5. Ensure Python 3.8+ installed
+
+---
+
+## ❌ Common Errors & Fixes
+
+### Installation Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `'python' is not recognized` | Python not installed or not in PATH | Install Python from python.org and check "Add to PATH" |
+| `'pip' is not recognized` | pip not in PATH | Run `python -m pip install --upgrade pip` |
+| `No module named 'playwright'` | Playwright not installed | Run `pip install playwright` then `playwright install chromium` |
+| `No module named 'dotenv'` | python-dotenv not installed | Run `pip install python-dotenv` |
+| `No module named 'requests'` | requests not installed | Run `pip install requests` |
+| Installation fails | Permission issues | Run Command Prompt as Administrator |
+
+### Runtime Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Bot won't start | Dependencies missing | Run option 4 in run.bat to install all dependencies |
+| Browser opens then closes | Page navigation failed | Check internet connection, try again |
+| `Navigation timeout` | Slow internet or site down | Wait and retry, check lightsailed.com is accessible |
+| `Browser closed unexpectedly` | Browser crash | Restart bot, check for other Chrome instances |
+| Black screen/flash then closes | Display/graphics issue | Update graphics drivers, run as Administrator |
+
+### Login Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Login not detected | Bot checking too soon | Wait longer after login, check URL changed |
+| `Login timed out` | Manual login not completed | Complete Google login in browser window |
+| Still on login page | Wrong credentials | Use Google login instead of username/password |
+| Session not saved | File permission issue | Run as Administrator, check storage_state.json |
+
+### API Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `API error: 401` | Invalid API key | Check .env file, get new key from openrouter.ai |
+| `API error: 404` | Model not found | Change model in bot_with_dashboard.py to `meta-llama/llama-3-8b-instruct:free` |
+| `API error: 429` | Rate limit exceeded | Wait a few minutes, upgrade API plan |
+| `API error: 500` | API server error | Retry, API is temporarily down |
+| `AI error: Connection timeout` | Internet issue | Check connection, increase timeout in code |
+| AI accuracy is poor | No page context | Check logs for "Context length", should be 500+ chars |
+
+### Book Selection Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Clicked assignment instead of book | Assignment filtering failed | Check logs for "Skipping assignment" messages |
+| `No books found` | Library not loaded | Wait longer for library to load, refresh page |
+| Book selected but didn't open | Read button not clicked | Check logs for "Clicking Read Book button" |
+| `Read Book` button not clicked | Selector mismatch | Check logs for button text, update selectors |
+
+### Reading Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Page not flipping | Selector not found | Check logs for "Flip error", update selectors |
+| Flipping too fast/slow | Wrong interval | Change `FLIP_INTERVAL` in bot_with_dashboard.py |
+| Bot stuck on one page | Page flip failed | Check for popup/dialog, close manually |
+| `Health check failed` | Page unresponsive | Bot will auto-recover, wait for retry |
+
+### Question Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Questions not detected | Selector mismatch | Check logs, update question selectors |
+| `Context length: 0` | Text extraction failed | Check for iframe content, update selectors |
+| AI gives wrong answers | No page context | Ensure context length is 500-2000 chars |
+| `Cloze error` | SVG not found | Check if question is different type |
+| Answer not submitted | Submit button not found | Check logs, update submit button selectors |
+
+### Dashboard Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Dashboard won't open | Port already in use | Change `DASHBOARD_PORT` in bot_with_dashboard.py |
+| `Access Denied` on dashboard | Bot not running | Start bot first, then open dashboard |
+| Dashboard shows 0 for everything | Stats not updating | Check bot logs for errors |
+| Logs not updating | WebSocket disconnected | Refresh dashboard page |
+
+### Book Completion Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Book completion not detected | Progress selector changed | Update selectors in `check_book_completed()` |
+| Exit button not clicked | Selector mismatch | Check logs for "Exit button not found" |
+| New book not selected | Library empty | Add more books to account, check filters |
+| Stuck after completion | Navigation failed | Manual intervention needed, restart bot |
+
+### AFK Detection Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Still detected as AFK | AFK prevention not working | Keep browser window visible, don't minimize |
+| Tab loses focus | Visibility API not overridden | Check browser console for errors |
+| Mouse movement not simulated | Playwright issue | Restart bot, check for updates |
+
+### File Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `.env` not found | File not created | Copy `.env.example` to `.env`, add API key |
+| `config.json` not found | First run | Bot creates default config automatically |
+| `storage_state.json` missing | Never logged in | Log in once, file will be created |
+| `progress.json` missing | First run | Bot creates file after first session |
+| Screenshots not saved | Permission issue | Run as Administrator, check folder permissions |
+| Logs not written | Folder doesn't exist | Create `logs/` folder manually |
+
+### Performance Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Bot runs slowly | Low RAM/CPU | Close other programs, reduce browser windows |
+| High memory usage | Memory leak | Restart bot every few hours |
+| Browser lag | Too many tabs | Close unnecessary tabs, reduce viewport size |
+| Network timeout | Slow internet | Increase timeout values in code |
+
+---
+
+## 🔍 Debug Mode
+
+To enable detailed debugging:
+
+1. Edit `bot_with_dashboard.py`
+2. Find log calls and change level to `"DEBUG"`
+3. Restart bot
+4. Check `logs/lightsail_bot.log` for detailed output
+
+---
+
+## 📞 Getting More Help
+
+1. **Check logs** - Select option 6 in run.bat
+2. **Review screenshots** - Check `q_*.png` files
+3. **Test API key** - Visit https://openrouter.ai/keys
+4. **Update bot** - Pull latest from GitHub
+5. **Reinstall** - Run option 4 in run.bat
 
 ---
 
