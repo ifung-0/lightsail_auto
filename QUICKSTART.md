@@ -1,4 +1,4 @@
-# LightSail Bot Enhanced - Quick Start Guide
+# LightSail Bot - Quick Start Guide
 
 ## 🚀 Get Started in 5 Minutes
 
@@ -12,12 +12,22 @@ playwright install chromium
 
 ### Step 2: Configure API Key (Recommended)
 
-Edit `bot_with_dashboard.py` and update line 18:
-```python
-OPENROUTER_API_KEY = "sk-or-v1-YOUR_KEY_HERE"  # Get free key at https://openrouter.ai/keys
-```
+**IMPORTANT: Use .env file for security!**
 
-**Why?** With AI enabled:
+1. Copy the example file:
+   ```bash
+   cd "lightsail automation\lightsail-automation"
+   copy .env.example .env
+   ```
+
+2. Edit `.env` and add your API key:
+   ```
+   OPENROUTER_API_KEY=sk-or-v1-YOUR_KEY_HERE
+   ```
+
+3. Get a free key at: https://openrouter.ai/keys
+
+**Why use AI?**
 - ✅ Questions answered automatically
 - ✅ Only flips forward (no going back)
 - ✅ Better accuracy
@@ -45,9 +55,10 @@ python bot_with_dashboard.py
 
 The bot will:
 1. Search for Power Text books automatically
-2. Click on the first Power Text found
-3. Click "Read" button
-4. Start reading
+2. Skip assignments (like "Retake Clozes")
+3. Click on the first Power Text found
+4. Click "Read Book" button
+5. Start reading
 
 **Or manually click any book** - bot will take over!
 

@@ -29,10 +29,27 @@ playwright install chromium
 ```
 
 ### Step 3: Configure API Key (Optional but Recommended)
-Edit `bot_with_dashboard.py` and update:
-```python
-OPENROUTER_API_KEY = "your-api-key-here"  # Get free key at openrouter.ai
-```
+
+**🔐 Secure Method (Recommended):**
+
+1. Navigate to the bot folder:
+   ```bash
+   cd "lightsail automation\lightsail-automation"
+   ```
+
+2. Copy the example environment file:
+   ```bash
+   copy .env.example .env
+   ```
+
+3. Edit `.env` and add your API key:
+   ```
+   OPENROUTER_API_KEY=sk-or-v1-your-key-here
+   ```
+
+4. Get a free key at: https://openrouter.ai/keys
+
+**Why use .env?** Your API key stays private and won't be uploaded to GitHub!
 
 ---
 
@@ -72,18 +89,18 @@ Access the real-time dashboard at: **http://localhost:8765**
 
 ## ⚙️ Configuration
 
-Edit `bot_with_dashboard.py` to customize:
+### API Key (Secure Method)
+Edit `.env` file in `lightsail automation\lightsail-automation/`:
+```
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+```
 
+### Bot Settings
+Edit `bot_with_dashboard.py`:
 ```python
-# Bot Settings
 FLIP_INTERVAL = 40          # Seconds between page flips
 HEADLESS = False            # Show browser window
-
-# AI Settings
-OPENROUTER_API_KEY = "sk-or-v1-..."  # Your API key
 OPENROUTER_MODEL = "qwen/qwen-2.5-coder-32b-instruct:free"
-
-# Dashboard
 DASHBOARD_PORT = 8765       # Dashboard port
 ```
 
