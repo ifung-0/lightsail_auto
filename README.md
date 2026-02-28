@@ -497,6 +497,31 @@ To enable detailed debugging:
 | Session Persistence | ✅ |
 | Progress Tracking | ✅ |
 | Error Logging | ✅ |
+| Context Extraction | ✅ (700-800 chars from iframes) |
+| Assignment Filtering | ✅ |
+
+---
+
+## 📚 Research
+
+This bot is based on original research by Isaac:
+
+**"Decoding the LightsailED Timer: An Inferred Model of Reading Validation and Its Exploitable Weaknesses"**
+
+Research findings:
+- Hybrid reading validation model (temporal + behavioral signals)
+- Scroll depth/velocity tracking
+- Mouse/keyboard interaction monitoring
+- Page visibility and idle detection
+- Potential bypass techniques identified
+
+Bot implements these countermeasures:
+- Randomized timing (±15% jitter)
+- Human-like mouse movements (Bezier curves)
+- Random scroll behavior
+- Reading pauses
+- Visibility API override
+- Background activity simulation
 
 ---
 

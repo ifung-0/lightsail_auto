@@ -27,10 +27,16 @@ playwright install chromium
 
 3. Get a free key at: https://openrouter.ai/keys
 
+4. Use this model (in bot_with_dashboard.py):
+   ```python
+   OPENROUTER_MODEL = "google/gemma-3n-e2b-it:free"
+   ```
+
 **Why use AI?**
 - ✅ Questions answered automatically
+- ✅ Reads full page text (700-800 chars from iframes)
 - ✅ Only flips forward (no going back)
-- ✅ Better accuracy
+- ✅ ~80%+ accuracy with context
 
 ### Step 3: Run the Bot
 
