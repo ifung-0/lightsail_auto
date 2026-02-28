@@ -26,7 +26,7 @@ load_dotenv()
 FLIP_INTERVAL = 40
 HEADLESS = False
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')  # Load from .env file
-OPENROUTER_MODEL = "meta-llama/llama-3-8b-instruct:free"  # Free model
+OPENROUTER_MODEL = "google/gemma-3n-e2b-it:free"  # Free Gemma model
 DASHBOARD_PORT = 8765
 
 # State
@@ -184,9 +184,13 @@ Reply with ONLY the NUMBER (1, 2, 3, or 4) of the correct answer. No explanation
                 "model": OPENROUTER_MODEL, 
                 "messages": [{"role": "user", "content": prompt}], 
                 "max_tokens": 10,
-                "temperature": 0.3  # Lower temperature for more focused answers
+                "temperature": 0.3
             },
             timeout=30)
+        
+        log(f"API Status: {r.status_code}", "DEBUG")
+        if not r.ok:
+            log(f"API Response: {r.text[:200]}", "ERROR")
         
         if r.ok:
             ans = r.json()['choices'][0]['message']['content'].strip()
