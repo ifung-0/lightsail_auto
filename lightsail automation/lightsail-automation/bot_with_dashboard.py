@@ -17,11 +17,15 @@ from playwright.async_api import async_playwright, Page, Browser
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import threading
 from collections import deque
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Config
 FLIP_INTERVAL = 40
 HEADLESS = False
-OPENROUTER_API_KEY = "YOUR API HERE"
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')  # Load from .env file
 OPENROUTER_MODEL = "qwen/qwen-2.5-coder-32b-instruct:free"
 DASHBOARD_PORT = 8765
 
