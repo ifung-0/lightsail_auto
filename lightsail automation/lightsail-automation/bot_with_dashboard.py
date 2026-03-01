@@ -26,7 +26,7 @@ load_dotenv()
 FLIP_INTERVAL = 40
 HEADLESS = False
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')  # Load from .env file
-OPENROUTER_MODEL = "google/gemma-3n-e2b-it:free"  # Free Gemma model
+OPENROUTER_MODEL = "meta-llama/llama-3-8b-instruct:free"  # Works globally
 DASHBOARD_PORT = 8765
 
 # State
@@ -294,31 +294,43 @@ class Bot:
                 log(f"AFK sim error: {e}", "DEBUG")
     
     async def start(self):
-        log("Starting browser...")
+        log("Starting browser (Firefox for better compatibility)...")
         pw = await async_playwright().start()
-        self.browser = await pw.chromium.launch(headless=HEADLESS, args=[
-            '--disable-blink-features=AutomationControlled',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows'
-        ])
-        ctx = await self.browser.new_context(viewport={'width': 1366, 'height': 768})
-        if os.path.exists("storage_state.json"):
-            try:
-                with open("storage_state.json") as f:
-                    s = json.load(f)
-                if s.get('cookies'):
-                    await ctx.add_cookies(s['cookies'])
-                    log("Loaded session")
-            except:
-                pass
-        self.page = await ctx.new_page()
-        await self.page.goto("https://lightsailed.com/school/literacy/", timeout=60000)
-        await asyncio.sleep(5)
         
-        # Start AFK prevention
-        await self.start_afk_prevention()
+        # Use Firefox instead of Chrome - less likely to be blocked
+        try:
+            self.browser = await pw.firefox.launch(
+                headless=HEADLESS,
+                args=['--disable-webgl']
+            )
+            self.page = await self.browser.new_page(
+                viewport={'width': 1366, 'height': 768},
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0'
+            )
+            log("Firefox browser launched", "INFO")
+        except Exception as e:
+            log(f"Firefox error: {e}, trying Chrome...", "WARNING")
+            self.browser = await pw.chromium.launch(
+                headless=HEADLESS,
+                args=[
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-background-timer-throttling',
+                    '--disable-dev-shm-usage',
+                    '--no-sandbox'
+                ]
+            )
+            self.page = await self.browser.new_page()
+            log("Chrome browser launched", "INFO")
         
-        log("Browser ready with AFK prevention")
+        log("Navigating to LightSail...", "INFO")
+        try:
+            await self.page.goto("https://lightsailed.com/school/literacy/", timeout=90000)
+            await asyncio.sleep(5)
+            log(f"Loaded: {self.page.url}", "INFO")
+        except Exception as e:
+            log(f"Navigation: {e}", "WARNING")
+        
+        log("Browser ready", "INFO")
         log(f"AI Enabled: {self.ai_enabled}", "INFO")
         log(f"Forward Only Mode: {self.forward_only}", "INFO")
     
@@ -923,13 +935,13 @@ class Bot:
     async def flip(self, forward=True):
         if self.forward_only:
             forward = True
-        
+
         try:
             if forward:
                 sel = 'button[aria-label="Go To Next Page"]'
             else:
                 sel = 'button[aria-label="Go To Previous Page"]'
-            
+
             btn = await self.page.query_selector(sel)
             if btn:
                 await btn.click()
@@ -937,14 +949,53 @@ class Bot:
                 log(f"Flipped {direction}")
                 await asyncio.sleep(1)
                 return True
-            
+
             key = 'ArrowRight' if forward else 'ArrowLeft'
             await self.page.keyboard.press(key)
             log(f"Flipped with {key}")
             await asyncio.sleep(1)
             return True
         except Exception as e:
-            log(f"Flip error: {e}", "ERROR")
+            error_msg = str(e)
+            log(f"Flip error: {error_msg}", "ERROR")
+            
+            # Check if error is about element intercepting or timeout (book might be finished)
+            if "intercepts pointer events" in error_msg or "Timeout" in error_msg:
+                log("Book might be finished - checking completion...", "WARNING")
+                await asyncio.sleep(2)
+                
+                # Check for exit confirmation button (book finished)
+                exit_confirm = await self.page.query_selector('button:has-text("Yes, I want to exit")')
+                if exit_confirm:
+                    log("Found exit confirmation - book is finished!", "INFO")
+                    return await self.exit_and_select_new_book()
+                
+                # Check if next page button is gone (book finished)
+                next_btn = await self.page.query_selector('button[aria-label="Go To Next Page"]')
+                if not next_btn:
+                    log("Next page button not found - book might be finished", "WARNING")
+                    
+                    # Try to click exit button
+                    exit_btn = await self.page.query_selector('button.reader-exit-btn')
+                    if exit_btn:
+                        log("Clicking exit button...", "INFO")
+                        await exit_btn.click()
+                        await asyncio.sleep(2)
+                        
+                        # Confirm exit
+                        exit_confirm = await self.page.query_selector('button:has-text("Yes, I want to exit")')
+                        if exit_confirm:
+                            await exit_confirm.click()
+                            await asyncio.sleep(3)
+                            log("Exit confirmed, selecting new book...", "INFO")
+                            return await self.exit_and_select_new_book()
+                    
+                    # Fallback: go to library directly
+                    log("Going to library directly...", "INFO")
+                    await self.page.goto("https://lightsailed.com/school/literacy/")
+                    await asyncio.sleep(3)
+                    return await self.select_book(auto=True)
+            
             return False
     
     async def run(self):
