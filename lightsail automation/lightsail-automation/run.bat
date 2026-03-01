@@ -2,11 +2,16 @@
 title LightSail Automation Bot
 color 0A
 
+:: Get the directory where this batch file is located
+cd /d "%~dp0"
+
 :menu
 cls
 echo ============================================================
 echo   LightSail Automation Bot - Enhanced Edition
 echo ============================================================
+echo.
+echo   Current directory: %CD%
 echo.
 echo   Select an option:
 echo.
@@ -110,15 +115,17 @@ if errorlevel 1 (
     echo.
     echo   ERROR: Failed to install Python packages!
     echo   Make sure Python is installed correctly.
+    echo   Try running: python -m pip install --upgrade pip
     pause
     goto menu
 )
 echo.
 echo   Step 2: Installing Playwright browser...
-playwright install chromium
+python -m playwright install chromium
 if errorlevel 1 (
     echo.
     echo   ERROR: Failed to install Playwright browser!
+    echo   Try running: python -m playwright install chromium
     pause
     goto menu
 )
