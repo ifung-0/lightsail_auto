@@ -525,4 +525,8 @@ Bot implements these countermeasures:
 
 ---
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/image?repos=ifung-0/lightsail_auto&type=date&legend=top-left)](https://www.star-history.com/?repos=ifung-0%2Flightsail_auto&type=date&legend=top-left)
+
 **Happy Reading! 📚**
